@@ -1,0 +1,213 @@
+grammar;
+
+// Program - root node
+pub program:() = {
+    exp
+};
+
+pub exp = exp_restrict<"U">;
+
+exp_restrict<M>:() = {
+    nil_exp,
+    record_exp,
+    assign_exp<M>,
+    if_exp<M>,
+    while_exp<M>,
+    for_exp<M>,
+    break_exp,
+    //let_exp,
+    //or_exp,
+};
+
+// NilExp
+nil_exp:() = {
+    "nil",
+};
+
+// IntExp of int
+int_exp:() = {
+    num,
+};
+
+// StringExp of string * pos
+string_exp:() = {
+    string,
+};
+
+// CallExp of {func: symbol, args: exp list, pos: pos}
+call_exp:() = {
+};
+
+// RecordExp of {fields: (symbol * exp * pos) list, typ: symbol, pos: pos}
+record_exp:() = {
+    type_id "{" record_fields "}",
+};
+
+record_fields = list<record_field, ",">;
+record_field:() = {
+    id "=" exp
+};
+
+// AssignExp of {var: var, exp: exp, pos: pos}
+assign_exp<M>:() = {
+    lvalue_or_array ":=" exp_restrict<"M">,
+};
+
+// IfExp of {test:exp, then': exp, else': exp option, pos:pos}
+if_exp<M>:() = {
+    "if" exp "then" exp_restrict<"U"> if M != "M",
+    "if" exp "then" exp_restrict<"M"> "else" exp_restrict<M>,
+};
+
+// WhileExp of {test:exp, body: exp, pos: pos}
+while_exp<M>:() = {
+    "while" exp "do" exp_restrict<M>,
+};
+
+// ForExp of {var: symbol, escape: bool ref, lo: exp, hi: exp, body: exp, pos: pos }
+for_exp<M>:() = {
+    "for" id ":=" exp "to" exp "do" exp_restrict<M>,
+};
+
+// BreakExp of pos
+break_exp:() = {
+    "break",
+};
+
+// LetExp of {decs: dec list, body: exp, pos: pos}
+let_exp:() = {
+    "let" decs "in" exps "end",
+};
+
+// ArrayExp of {typ: symbol, size: exp, init: exp, pos: pos}
+array_exp:() = {
+    id "[" exp "]" "of" exp,
+};
+
+or_exp = left_assoc<"|", and_exp>;
+and_exp = left_assoc<"&", rel_exp>;
+rel_exp = no_assoc<relop, simple_exp>;
+simple_exp = left_assoc<addop, term_exp>;
+term_exp = left_assoc<mulop, factor_exp>;
+
+factor_exp:() = {
+    primary_exp,
+    "-" primary_exp,
+};
+
+primary_exp:() = {
+    lvalue_or_array,
+    int_exp,
+    string_exp,
+    //call_exp,
+    seq_exp,
+};
+
+// SeqExp of (exp * pos) list      
+seq_exp:() = {
+    "(" exps ")"
+};
+
+exps = list<exp, ";">;
+
+// Declarations
+pub decs:() = {
+    dec*
+};
+
+dec:() = {
+    tydec,
+    vardec,
+//    Fundec,
+};
+
+// Data Types
+tydec:() = {
+    "type" type_id "=" ty
+};
+
+ty:() = {
+    type_id,
+    "{" tyfields "}",
+    "array" "of" type_id,
+};
+
+tyfields = list<tyfield, ",">;
+tyfield:() = {
+    id ":" type_id
+};
+
+// Variables
+vardec:() = {
+    "var" id (":" <type_id>)? ":=" exp
+};
+
+// Functions
+fundec:() = {
+    "function" id "(" tyfields ")" (":" <type_id>)? "=" exp
+};
+
+// L-Values and Expressions
+lvalue_or_array:() = {
+    id,
+    id "." id,
+    id "[" exp "]" "of" exp,
+    id "[" exp "]" lvalue_tail
+};
+
+lvalue_tail:() = {
+    (),
+    lvalue_tail "." id,
+    lvalue_tail "[" exp "]",
+};
+
+type_id:() = {
+    id,
+};
+
+id:() = {
+    r"[a-zA-Z][a-zA-Z0-9_]*",
+};
+
+num:() = {
+    r"[0-9]+",
+};
+
+string:() = {
+    r#""\w*""#,
+};
+
+addop:() = {
+    "+",
+    "-",
+};
+
+mulop:() = {
+    "*",
+    "/",
+};
+
+relop:() = {
+    "=",
+    "<>",
+    ">",
+    "<",
+    ">=",
+    "<=",
+};
+
+// helper
+list<T, sep>:() = {
+    (),
+    (<T> sep)* T,
+};
+
+left_assoc<op, higher_prec>:() = {
+    left_assoc<op, higher_prec> op higher_prec,
+    higher_prec
+};
+
+no_assoc<op, higher_prec>:() = {
+    higher_prec op higher_prec,
+    higher_prec,
+};

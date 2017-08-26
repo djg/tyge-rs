@@ -1,0 +1,12 @@
+[package]
+name = "tygers"
+version = "0.1.0"
+authors = ["Dan Glastonbury <dan.glastonbury@gmail.com>"]
+build = "build.rs"
+
+[build-dependencies]
+lalrpop = "*"
+
+[dependencies]
+lalrpop-util = "*"
+regex = "*"
