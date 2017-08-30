@@ -17,6 +17,7 @@ exp_restrict<M>:() = {
     break_exp,
     //let_exp,
     //or_exp,
+    lvalue_array "of" exp,
 };
 
 // NilExp
@@ -50,7 +51,7 @@ record_field:() = {
 
 // AssignExp of {var: var, exp: exp, pos: pos}
 assign_exp<M>:() = {
-    lvalue_or_array ":=" exp_restrict<"M">,
+    or_exp ":=" exp_restrict<"M">,
 };
 
 // IfExp of {test:exp, then': exp, else': exp option, pos:pos}
@@ -96,7 +97,7 @@ factor_exp:() = {
 };
 
 primary_exp:() = {
-    lvalue_or_array,
+    lvalue,
     int_exp,
     string_exp,
     //call_exp,
@@ -148,17 +149,19 @@ fundec:() = {
 };
 
 // L-Values and Expressions
-lvalue_or_array:() = {
+lvalue:() = {
     id,
-    id "." id,
-    id "[" exp "]" "of" exp,
-    id "[" exp "]" lvalue_tail
+    lvalue_not_id,
 };
 
-lvalue_tail:() = {
-    (),
-    lvalue_tail "." id,
-    lvalue_tail "[" exp "]",
+lvalue_array:() = {
+    id "[" exp "]",
+};
+
+lvalue_not_id:() = {
+    lvalue "."  id,
+    lvalue_array,
+    lvalue_not_id "[" exp "]"
 };
 
 type_id:() = {
