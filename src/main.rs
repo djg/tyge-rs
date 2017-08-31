@@ -1,5 +1,5 @@
-extern crate lalrpop_util;
-extern crate regex;
+//extern crate lalrpop_util;
+//extern crate regex;
 
 mod tiger;
 
@@ -10,13 +10,17 @@ fn tiger_program() {
 
 #[test]
 fn tiger_tydec() {
-    assert!(tiger::parse_decs("").is_ok());
+    //assert!(tiger::parse_decs("").is_ok());
     assert!(tiger::parse_decs("type a = b").is_ok());
     assert!(tiger::parse_decs("type a = {}").is_ok());
     assert!(tiger::parse_decs("type a = { }").is_ok());
     assert!(tiger::parse_decs("type a = { b: c }").is_ok());
     assert!(tiger::parse_decs("type a = { b: c, d :e }").is_ok());
     assert!(tiger::parse_decs("type a = array of b").is_ok());
+
+    assert!(tiger::parse_decs("type intlist = {hd: int, tl: intlist}").is_ok());
+    assert!(tiger::parse_decs(r#"type tree = {key: int, children: treelist}
+type treelist = {hf: tree, tl: treelist}"#).is_ok());
 
     assert!(tiger::parse_decs("type = b").is_err());
     assert!(tiger::parse_decs("type a =").is_err());
@@ -25,7 +29,7 @@ fn tiger_tydec() {
     assert!(tiger::parse_decs("type a = b: c }").is_err());
     assert!(tiger::parse_decs("type a = { b: }").is_err());
     assert!(tiger::parse_decs("type a = { :c }").is_err());
-    
+
     assert!(tiger::parse_decs("type 0 = array of b").is_err());
     assert!(tiger::parse_decs("type = array of b").is_err());
     assert!(tiger::parse_decs("type a = array of 1").is_err());
@@ -37,6 +41,8 @@ fn tiger_tydec() {
 fn tiger_vardec() {
     assert!(tiger::parse_decs("var a := 1").is_ok());
     assert!(tiger::parse_decs("var a: b := 1").is_ok());
+    assert!(tiger::parse_decs("var a := a[10] of 0").is_ok());
+    assert!(tiger::parse_decs("var arr1:arrtype := arrtype [10] of 0").is_ok());
 }
 
 #[test]
@@ -61,7 +67,7 @@ fn tiger_exp() {
     assert!(tiger::parse_exp("a := b").is_ok());
 
     assert!(tiger::parse_exp("while a do b").is_ok());
-    
+
     assert!(tiger::parse_exp("0 := a").is_err());
 }
 
@@ -136,7 +142,7 @@ fn tiger_rel_exp() {
     assert!(tiger::parse_exp("a < b").is_ok());
     assert!(tiger::parse_exp("a <= b").is_ok());
     assert!(tiger::parse_exp("a=(b=c)").is_ok());
-    
+
     assert!(tiger::parse_exp("a = b = c").is_err());
 }
 

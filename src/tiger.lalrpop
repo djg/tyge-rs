@@ -5,19 +5,21 @@ pub program:() = {
     exp
 };
 
-pub exp = exp_restrict<"U">;
+pub exp:() = {
+    exp_restrict<"U">,
+    exp_restrict<"M">,
+};
 
 exp_restrict<M>:() = {
-    nil_exp,
-    record_exp,
-    assign_exp<M>,
+    nil_exp if M == "M",
+    record_exp if M == "M",
+    assign_exp<""> if M == "M",
     if_exp<M>,
     while_exp<M>,
     for_exp<M>,
-    break_exp,
-    //let_exp,
-    //or_exp,
-    lvalue_array "of" exp,
+    break_exp if M == "M",
+    or_exp if M == "M",
+    lvalue_array "of" exp_restrict<M>,
 };
 
 // NilExp
@@ -50,13 +52,14 @@ record_field:() = {
 };
 
 // AssignExp of {var: var, exp: exp, pos: pos}
-assign_exp<M>:() = {
-    or_exp ":=" exp_restrict<"M">,
+assign_exp<V>:() = {
+    lvalue ":=" or_exp,
+    id ":" type_id ":=" or_exp if V != ""
 };
 
 // IfExp of {test:exp, then': exp, else': exp option, pos:pos}
 if_exp<M>:() = {
-    "if" exp "then" exp_restrict<"U"> if M != "M",
+    "if" exp "then" exp if M == "U",
     "if" exp "then" exp_restrict<"M"> "else" exp_restrict<M>,
 };
 
@@ -112,21 +115,28 @@ seq_exp:() = {
 exps = list<exp, ";">;
 
 // Declarations
-pub decs:() = {
-    dec*
+pub decs = _decs<"">;
+// _decs restrict the choice of decs
+// B == "F" - ban function
+// B == "T" - ban type
+_decs<B>:() = {
+    (),
+    _decs<"F"> fundecs if B != "F",
+    _decs<"T"> tydecs if B != "T",
+    decs vardec,
 };
 
-dec:() = {
-    tydec,
-    vardec,
-//    Fundec,
+// Functions
+fundecs:() = {
+    ("function" id "(" tyfields ")" (":" <type_id>)? "=" exp)+
 };
 
 // Data Types
-tydec:() = {
-    "type" type_id "=" ty
+tydecs:() = {
+    ("type" type_id "=" ty)+
 };
 
+// Types
 ty:() = {
     type_id,
     "{" tyfields "}",
@@ -140,28 +150,23 @@ tyfield:() = {
 
 // Variables
 vardec:() = {
-    "var" id (":" <type_id>)? ":=" exp
-};
-
-// Functions
-fundec:() = {
-    "function" id "(" tyfields ")" (":" <type_id>)? "=" exp
+    "var" assign_exp<"V">
 };
 
 // L-Values and Expressions
-lvalue:() = {
+pub lvalue:() = {
     id,
     lvalue_not_id,
 };
 
 lvalue_array:() = {
-    id "[" exp "]",
+    id "[" or_exp "]",
 };
 
 lvalue_not_id:() = {
     lvalue "."  id,
     lvalue_array,
-    lvalue_not_id "[" exp "]"
+    lvalue_not_id "[" or_exp "]"
 };
 
 type_id:() = {
